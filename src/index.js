@@ -1,75 +1,61 @@
-export default function ({ Plugin, types: t }) {
-  function addDisplayName(id, call) {
-    var props = call.arguments[0].properties;
-    var safe = true;
+var Transformer = require('babel-core').Transformer;
+var t = require('babel-core').types;
 
-    for (var i = 0; i < props.length; i++) {
-      var prop = props[i];
-      var key = t.toComputedKey(prop);
-      if (t.isLiteral(key, { value: "displayName" })) {
-        safe = false;
-        break;
-      }
-    }
-
-    if (safe) {
-      props.unshift(t.property("init", t.identifier("displayName"), t.literal(id)));
-    }
-  }
-
-  var isCreateClassCallExpression = t.buildMatchMemberExpression("React.createClass");
-
-  function isCreateClass(node) {
-    if (!node || !t.isCallExpression(node)) return false;
-
-    // not React.createClass call member object
-    if (!isCreateClassCallExpression(node.callee)) return false;
-
-    // no call arguments
-    var args = node.arguments;
-    if (args.length !== 1) return false;
-
-    // first node arg is not an object
-    var first = args[0];
-    if (!t.isObjectExpression(first)) return false;
-
-    return true;
-  }
-  
-  return new Plugin("react-display-name", {
-    metadata: {
-      group: "builtin-pre"
-    },
-
-    visitor: {
-      ExportDefaultDeclaration(node, parent, scope, file) {
-        if (isCreateClass(node.declaration)) {
-          addDisplayName(file.opts.basename, node.declaration);
-        }
-      },
-      
-      "AssignmentExpression|Property|VariableDeclarator"(node) {
-        var left, right;
-
-        if (t.isAssignmentExpression(node)) {
-          left = node.left;
-          right = node.right;
-        } else if (t.isProperty(node)) {
-          left = node.key;
-          right = node.value;
-        } else if (t.isVariableDeclarator(node)) {
-          left = node.id;
-          right = node.init;
-        }
-
-        if (t.isMemberExpression(left)) {
-          left = left.property;
-        }
-
-        if (t.isIdentifier(left) && isCreateClass(right)) {
-          addDisplayName(left.name, right);
-        }
-      }
-    }
-  });
+function isRenderMethod(member) {
+  return member.kind === 'method' && member.key.name === 'render';
 }
+
+function isReturnStatement(member) {
+  return member.type === 'ReturnStatement';
+}
+
+function isClassNameAttribute(attribute) {
+  return attribute.name && attribute.name.name === 'className';
+}
+
+function createAST() {
+  /*
+    The AST for:
+    (() => {
+      if (!this.constructor || !this.constructor.displayName) {
+        return '';
+      }
+
+      if (!this.constructor.propTypes) {
+        return this.constructor.displayName + ' ';
+      }
+
+      return this.constructor.displayName + ' ' + Object.keys(this.constructor.propTypes)
+        .filter(propKey => propKey.indexOf('is') === 0)
+        .map(propKey => this.props[propKey] ? propKey : '')
+        .join(' ') + ' ';
+      })();
+   */
+  return JSON.parse(JSON.stringify(require('./qaDecorator.AST.json')));
+}
+
+module.exports = new Transformer('add-displayName-as-class', {
+  ClassDeclaration: function (node) {
+    const renderMethod = node.body.body.filter(isRenderMethod)[ 0 ];
+    if (!renderMethod) {
+      return;
+    }
+
+    const returnStatement = renderMethod.value.body.body.filter(isReturnStatement)[ 0 ];
+    if (!returnStatement) {
+      return;
+    }
+
+    if (returnStatement.argument.type !== 'JSXElement') {
+      return;
+    }
+
+    const classNameAttribute = returnStatement.argument.openingElement.attributes.filter(isClassNameAttribute)[ 0 ];
+
+    if (!classNameAttribute) {
+      return;
+    }
+
+    classNameAttribute.value = t.binaryExpression('+', createAST(), classNameAttribute.value);
+  }
+});
