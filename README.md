@@ -5,7 +5,7 @@ Add displayName to React.createClass calls
 ## Installation
 
 ```sh
-$ npm install babel-plugin-react-display-name
+$ npm install babel-plugin-react-component-to-class
 ```
 
 ## Usage
@@ -16,20 +16,20 @@ $ npm install babel-plugin-react-display-name
 
 ```json
 {
-  "plugins": ["react-display-name"]
+  "plugins": ["babel-plugin-react-component-to-class"]
 }
 ```
 
 ### Via CLI
 
 ```sh
-$ babel --plugins react-display-name script.js
+$ babel --plugins babel-plugin-react-component-to-class script.js
 ```
 
 ### Via Node API
 
 ```javascript
 require("babel-core").transform("code", {
-  plugins: ["react-display-name"]
+  plugins: ["babel-plugin-react-component-to-class"]
 });
 ```
