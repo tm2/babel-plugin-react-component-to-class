@@ -34,7 +34,7 @@ function createAST() {
   return JSON.parse(JSON.stringify(require('./qaDecorator.AST.json')));
 }
 
-module.exports = new Transformer('add-displayName-as-class', {
+module.exports = new Transformer('react-component-to-class', {
   ClassDeclaration: function (node) {
     const renderMethod = node.body.body.filter(isRenderMethod)[ 0 ];
     if (!renderMethod) {
