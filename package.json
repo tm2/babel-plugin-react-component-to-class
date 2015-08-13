@@ -1,8 +1,8 @@
 {
-  "name": "babel-plugin-react-display-name",
-  "version": "1.0.3",
-  "description": "Add displayName to React.createClass calls",
-  "repository": "babel-plugins/babel-plugin-react-display-name",
+  "name": "babel-plugin-react-component-to-class",
+  "version": "1.0.0",
+  "description": "Add component DisplayName to className output (useful for automated testing)",
+  "repository": "tm2/babel-plugin-react-component-to-class",
   "license": "MIT",
   "main": "lib/index.js",
   "devDependencies": {
